@@ -2475,7 +2475,7 @@ static int geni_i2c_execute_xfer(struct geni_i2c_dev *gi2c,
 		mb();
 		mutex_unlock(&gi2c->i2c_ssr.ssr_lock);
 		timeout = wait_for_completion_timeout(&gi2c->xfer,
-						gi2c->xfer_timeout);
+						(gi2c->xfer_timeout * 5));
 		mutex_lock(&gi2c->i2c_ssr.ssr_lock);
 		if (gi2c->i2c_ssr.is_ssr_down) {
 			I2C_LOG_DBG(gi2c->ipcl, false, gi2c->dev,
@@ -2679,8 +2679,16 @@ static int geni_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 	}
 
 	geni_ios = geni_read_reg(gi2c->base, SE_GENI_IOS);
+
+	if ((geni_ios & 0x3) != 0x3) {
+		pr_info("gini_ios = %d\r\n", geni_ios);
+		geni_write_reg(FORCE_DEFAULT, gi2c->base, GENI_FORCE_DEFAULT_REG);
+		geni_ios = geni_read_reg(gi2c->base, SE_GENI_IOS);
+		pr_info("gini_ios = %d\r\n", geni_ios);
+	}
+
 	if (!gi2c->is_shared && ((geni_ios & 0x3) != 0x3)) {//SCL:b'1, SDA:b'0
-		I2C_LOG_ERR(gi2c->ipcl, false, gi2c->dev,
+		I2C_LOG_ERR(gi2c->ipcl, true, gi2c->dev,
 			    "IO lines in bad state, Power the slave\n");
 		/* for levm skip auto suspend timer */
 		if (!gi2c->is_le_vm) {

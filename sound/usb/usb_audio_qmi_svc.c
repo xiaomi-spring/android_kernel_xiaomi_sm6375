@@ -182,6 +182,17 @@ enum usb_qmi_audio_format {
 	USB_QMI_PCM_FORMAT_U32_BE,
 };
 
+#define LCT_TP_EARPHONE_PLUGIN  1
+#if LCT_TP_EARPHONE_PLUGIN
+typedef struct touchscreen_earphone_plugin_data {
+	bool valid;
+	bool earphone_plugged_in;
+	void (*event_callback)(void);
+} touchscreen_earphone_plugin_data_t;
+touchscreen_earphone_plugin_data_t g_touchscreen_earphone_plugin = {0};
+EXPORT_SYMBOL(g_touchscreen_earphone_plugin);
+#endif
+
 #define uaudio_print(level, fmt, ...) do { \
 	ipc_log_string(uaudio_svc->uaudio_ipc_log, "%s%s: " fmt, "", __func__,\
 			##__VA_ARGS__); \
@@ -954,6 +965,14 @@ static void uaudio_connect(void *unused, struct usb_interface *intf,
 		uaudio_err("Invalid card number\n");
 		return;
 	}
+/* start:add touch headphone */
+#if LCT_TP_EARPHONE_PLUGIN
+	g_touchscreen_earphone_plugin.earphone_plugged_in = true;
+	if(g_touchscreen_earphone_plugin.valid) {
+		g_touchscreen_earphone_plugin.event_callback();
+	}
+#endif
+/* end:add touch headphone */
 
 	uadev[chip->card->number].chip = chip;
 }
@@ -980,6 +999,14 @@ static void uaudio_disconnect(void *unused, struct usb_interface *intf)
 		uaudio_err("invalid card number\n");
 		return;
 	}
+/* start:add touch headphone */
+#if LCT_TP_EARPHONE_PLUGIN
+	g_touchscreen_earphone_plugin.earphone_plugged_in = false;
+	if(g_touchscreen_earphone_plugin.valid) {
+		g_touchscreen_earphone_plugin.event_callback();
+	}
+#endif
+/* end:add touch headphone */
 
 	mutex_lock(&chip->mutex);
 	dev = &uadev[card_num];

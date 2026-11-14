@@ -16,4 +16,5 @@ build.config.msm.gen3auto
 build.config.msm.gen4auto
 build.config.msm.sdmsteppeauto
 build.config.msm.pitti
+build.config.msm.spring
 build.config.msm.mdm9607

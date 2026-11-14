@@ -21,6 +21,7 @@ load(":blair.bzl", "define_blair")
 load(":pitti.bzl", "define_pitti")
 load(":anorak.bzl", "define_anorak")
 load(":neo_la.bzl", "define_neo_la")
+load(":spring.bzl", "define_spring")
 
 def define_msm_platforms():
     define_top_level_rules()
@@ -45,4 +46,5 @@ def define_msm_platforms():
     define_pitti()
     define_anorak()
     define_neo_la()
+    define_spring()
     define_mdm9607()

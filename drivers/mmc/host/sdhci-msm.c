@@ -3054,6 +3054,13 @@ static void sdhci_msm_log_irq(struct sdhci_host *host, u32 intmask)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = sdhci_pltfm_priv(pltfm_host);
+	struct mmc_host *mmc = host->mmc;
+
+	if (mmc != NULL) {
+		if ((intmask & SDHCI_INT_TIMEOUT) && (mmc->card != NULL)){
+			atomic_inc(&msm_host->cmd_timeout_count);
+		}
+	}
 
 	sdhci_msm_log_str(msm_host, "intmask: 0x%x\n", intmask);
 }
@@ -5359,6 +5366,22 @@ static int sdhci_msm_setup_pwr_irq(struct sdhci_msm_host *msm_host)
 	return 0;
 }
 
+static ssize_t cmd_timeout_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+    struct sdhci_host *host = dev_get_drvdata(dev);
+    struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+    struct sdhci_msm_host *msm_host = sdhci_pltfm_priv(pltfm_host);
+
+    u32 count;
+
+    count = atomic_read(&msm_host->cmd_timeout_count);
+
+    return sysfs_emit(buf, "%u\n", count);
+
+}
+static DEVICE_ATTR(cmd_timeout, 0444, cmd_timeout_show, NULL);
+
 static int sdhci_msm_probe(struct platform_device *pdev)
 {
 	struct sdhci_host *host;
@@ -5390,6 +5413,13 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 	msm_host = sdhci_pltfm_priv(pltfm_host);
 	msm_host->mmc = host->mmc;
 	msm_host->pdev = pdev;
+
+	atomic_set(&msm_host->cmd_timeout_count, 0);
+	ret = device_create_file(&pdev->dev, &dev_attr_cmd_timeout);
+	if (ret) {
+		pr_err("%s: %s: failed creating cmd_timeout attr: %d\n",
+		mmc_hostname(host->mmc), __func__, ret);
+	}
 
 	sdhci_msm_init_sysfs(dev);
 #if defined(CONFIG_SDHCI_MSM_DBG)

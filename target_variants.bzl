@@ -1,3 +1,7 @@
+target_arch_map = {
+    "spring" : "blair",
+}
+
 la_targets = [
     # keep sorted
     "anorak",
@@ -11,6 +15,7 @@ la_targets = [
     "pitti",
     "sdmsteppeauto",
     "seraph",
+    "spring",
 ]
 
 la_variants = [
@@ -114,3 +119,9 @@ def get_all_variants():
 
 def get_all_lunch_target_base_target_variants():
     return [(lt, bt, v) for lt, bt in lunch_target_bases.items() for v in la_variants]
+
+def get_arch_of_target(target):
+    arch = target_arch_map.get(target)
+    if not arch:
+        arch = target
+    return arch
