@@ -120,8 +120,6 @@ static int msm_sharedmem_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct uio_info *info = NULL;
 	struct resource *clnt_res = NULL;
-	struct device_node *mem_node;
-	struct reserved_mem *rmem;
 	u32 client_id = ((u32)~0U);
 	u32 shared_mem_size = 0;
 	u32 shared_mem_tot_sz = 0;
