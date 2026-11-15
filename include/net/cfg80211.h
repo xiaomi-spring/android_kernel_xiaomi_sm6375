@@ -1546,6 +1546,21 @@ struct link_station_del_parameters {
 };
 
 /**
+ * struct cfg80211_ttlm_params: TID to link mapping parameters
+ *
+ * Used for setting a TID to link mapping.
+ *
+ * @dlink: Downlink TID to link mapping, as defined in section 9.4.2.314
+ *     (TID-To-Link Mapping element) in Draft P802.11be_D4.0.
+ * @ulink: Uplink TID to link mapping, as defined in section 9.4.2.314
+ *     (TID-To-Link Mapping element) in Draft P802.11be_D4.0.
+ */
+struct cfg80211_ttlm_params {
+	u16 dlink[8];
+	u16 ulink[8];
+};
+
+/**
  * struct station_parameters - station parameters
  *
  * Used to change and create a new station.
@@ -4372,6 +4387,8 @@ struct mgmt_frame_regs {
  * @add_link_station: Add a link to a station.
  * @mod_link_station: Modify a link of a station.
  * @del_link_station: Remove a link of a station.
+ *
+ * @set_ttlm: set the TID to link mapping.
  */
 struct cfg80211_ops {
 	int	(*suspend)(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
@@ -4725,6 +4742,8 @@ struct cfg80211_ops {
 				    struct link_station_parameters *params);
 	int	(*del_link_station)(struct wiphy *wiphy, struct net_device *dev,
 				    struct link_station_del_parameters *params);
+	int	(*set_ttlm)(struct wiphy *wiphy, struct net_device *dev,
+			    struct cfg80211_ttlm_params *params);
 
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
@@ -6403,6 +6422,19 @@ static inline int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
 }
 
 /**
+ * ieee80211_is_valid_amsdu - check if subframe lengths of an A-MSDU are valid
+ *
+ * This is used to detect non-standard A-MSDU frames, e.g. the ones generated
+ * by ath10k and ath11k, where the subframe length includes the length of the
+ * mesh control field.
+ *
+ * @skb: The input A-MSDU frame without any headers.
+ * @mesh_hdr: use standard compliant mesh A-MSDU subframe header
+ * Returns: true if subframe header lengths are valid for the @mesh_hdr mode
+ */
+bool ieee80211_is_valid_amsdu(struct sk_buff *skb, bool mesh_hdr);
+
+/**
  * ieee80211_amsdu_to_8023s - decode an IEEE 802.11n A-MSDU frame
  *
  * Decode an IEEE 802.11 A-MSDU and convert it to a list of 802.3 frames.
@@ -6417,11 +6449,36 @@ static inline int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
  * @extra_headroom: The hardware extra headroom for SKBs in the @list.
  * @check_da: DA to check in the inner ethernet header, or NULL
  * @check_sa: SA to check in the inner ethernet header, or NULL
+ * @mesh_control: A-MSDU subframe header includes the mesh control field
  */
 void ieee80211_amsdu_to_8023s(struct sk_buff *skb, struct sk_buff_head *list,
 			      const u8 *addr, enum nl80211_iftype iftype,
 			      const unsigned int extra_headroom,
-			      const u8 *check_da, const u8 *check_sa);
+			      const u8 *check_da, const u8 *check_sa,
+			      bool mesh_control);
+
+/**
+ * ieee80211_get_8023_tunnel_proto - get RFC1042 or bridge tunnel encap protocol
+ *
+ * Check for RFC1042 or bridge tunnel header and fetch the encapsulated
+ * protocol.
+ *
+ * @hdr: pointer to the MSDU payload
+ * @proto: destination pointer to store the protocol
+ * Return: true if encapsulation was found
+ */
+bool ieee80211_get_8023_tunnel_proto(const void *hdr, __be16 *proto);
+
+/**
+ * ieee80211_strip_8023_mesh_hdr - strip mesh header from converted 802.3 frames
+ *
+ * Strip the mesh header, which was left in by ieee80211_data_to_8023 as part
+ * of the MSDU data. Also move any source/destination addresses from the mesh
+ * header to the ethernet header (if present).
+ *
+ * @skb: The 802.3 frame with embedded mesh header
+ */
+int ieee80211_strip_8023_mesh_hdr(struct sk_buff *skb);
 
 /**
  * cfg80211_classify8021d - determine the 802.1p/1d tag for a data frame

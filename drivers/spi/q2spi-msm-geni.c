@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/device.h>
@@ -1495,6 +1495,17 @@ static int q2spi_abort_command(struct q2spi_geni *q2spi, struct q2spi_request q2
 	Q2SPI_DBG_1(q2spi, "%s cmd:%d addr:%d flow_id:%d data_len:%d\n",
 		    __func__, q2spi_req.cmd, q2spi_req.addr,
 		    q2spi_req.flow_id, q2spi_req.data_len);
+
+	if (q2spi_req.flow_id < Q2SPI_START_TID_ID || q2spi_req.flow_id > Q2SPI_END_TID_ID) {
+		Q2SPI_ERROR(q2spi, "%s Err Invalid tid:%d\n", __func__, q2spi_req.flow_id);
+		return -EINVAL;
+	}
+
+	if (q2spi_req.data_len > 0) {
+		Q2SPI_ERROR(q2spi, "%s Invalid data_len:%d\n", __func__, q2spi_req.data_len);
+		return -EINVAL;
+	}
+
 	q2spi_pkt = q2spi_alloc_q2spi_pkt(q2spi, __LINE__);
 	if (!q2spi_pkt)
 		return -ENOMEM;
@@ -1530,6 +1541,17 @@ static int q2spi_soft_reset(struct q2spi_geni *q2spi, struct q2spi_request q2spi
 	Q2SPI_DBG_1(q2spi, "%s cmd:%d addr:%d flow_id:%d data_len:%d\n",
 		    __func__, q2spi_req.cmd, q2spi_req.addr,
 		    q2spi_req.flow_id, q2spi_req.data_len);
+
+	if (q2spi_req.flow_id < Q2SPI_START_TID_ID || q2spi_req.flow_id > Q2SPI_END_TID_ID) {
+		Q2SPI_ERROR(q2spi, "%s Err Invalid tid:%d\n", __func__, q2spi_req.flow_id);
+		return -EINVAL;
+	}
+
+	if (q2spi_req.data_len > 0) {
+		Q2SPI_ERROR(q2spi, "%s Invalid data_len:%d\n", __func__, q2spi_req.data_len);
+		return -EINVAL;
+	}
+
 	q2spi_pkt = q2spi_alloc_q2spi_pkt(q2spi, __LINE__);
 	if (!q2spi_pkt)
 		return -ENOMEM;
@@ -1923,6 +1945,7 @@ static int __q2spi_transfer(struct q2spi_geni *q2spi, struct q2spi_request q2spi
 			    __func__, q2spi_pkt);
 		return 0;
 	} else if (ret == -EINVAL) {
+		q2spi_unmap_var_bufs(q2spi, q2spi_pkt);
 		return -EINVAL;
 	} else if (ret) {
 		Q2SPI_DEBUG(q2spi, "%s q2spi_pkt:%p __q2spi_send_messages ret:%d\n",
@@ -4231,7 +4254,7 @@ static int q2spi_sleep_config(struct q2spi_geni *q2spi, struct platform_device *
 	Q2SPI_DBG_1(q2spi, "%s Q2SPI clk_gpio:%d mosi_gpio:%d\n",
 		    __func__, q2spi->wake_clk_gpio, q2spi->wake_mosi_gpio);
 
-	q2spi->wakeup_wq = alloc_workqueue("%s", WQ_HIGHPRI, 1, dev_name(q2spi->dev));
+	q2spi->wakeup_wq = alloc_workqueue("%s",  WQ_UNBOUND | WQ_HIGHPRI, 1, dev_name(q2spi->dev));
 	if (!q2spi->wakeup_wq) {
 		Q2SPI_ERROR(q2spi, "Err failed to wakeup workqueue");
 		return -ENOMEM;
@@ -4512,7 +4535,7 @@ static int q2spi_geni_probe(struct platform_device *pdev)
 		goto free_buf;
 	}
 
-	q2spi->doorbell_wq = alloc_workqueue("%s", WQ_HIGHPRI, 1, dev_name(dev));
+	q2spi->doorbell_wq = alloc_workqueue("%s",  WQ_UNBOUND | WQ_HIGHPRI, 1, dev_name(dev));
 	if (!q2spi->doorbell_wq) {
 		ret = -ENOMEM;
 		Q2SPI_ERROR(q2spi, "Err failed to allocate workqueue");

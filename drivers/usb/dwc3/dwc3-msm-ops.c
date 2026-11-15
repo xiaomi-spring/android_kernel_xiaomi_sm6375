@@ -18,8 +18,8 @@
 #include "gadget.h"
 
 /* USB2 phy configuration quirk control bit */
-#define USB2PHYCFG_SUSPHY      BIT(0)
-#define USB2PHYCFG_ENBLSLPM    BIT(1)
+#define USB2PHYCFG_SUSPHY	BIT(0)
+#define USB2PHYCFG_ENBLSLPM	BIT(1)
 
 struct kprobe_data {
 	struct dwc3 *dwc;
@@ -27,7 +27,7 @@ struct kprobe_data {
 };
 
 static int entry_dwc3_suspend_common(struct kretprobe_instance *ri,
-                               struct pt_regs *regs)
+				struct pt_regs *regs)
 {
 	struct dwc3 *dwc = (struct dwc3 *)regs->regs[0];
 	int flag = 0;
@@ -53,7 +53,7 @@ static int entry_dwc3_suspend_common(struct kretprobe_instance *ri,
 }
 
 static int exit_dwc3_suspend_common(struct kretprobe_instance *ri,
-                               struct pt_regs *regs)
+				struct pt_regs *regs)
 {
 	struct kprobe_data *data = (struct kprobe_data *)ri->data;
 	struct dwc3 *dwc = data->dwc;
@@ -68,6 +68,7 @@ static int exit_dwc3_suspend_common(struct kretprobe_instance *ri,
 
 		dev_dbg(dwc->dev, "restored SUSPHY=%u & ENABLSLPM=%u\n",
 			dwc->dis_u2_susphy_quirk, dwc->dis_enblslpm_quirk);
+
 	}
 
 	dev_dbg(dwc->dev, "dwc3 suspend common exit\n");

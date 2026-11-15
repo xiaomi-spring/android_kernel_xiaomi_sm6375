@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #define DRIVER_NAME "msm_sharedmem"
@@ -14,9 +14,7 @@
 #include <linux/of.h>
 #include <linux/dma-mapping.h>
 #include <linux/qcom_scm.h>
-/*Bein modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
 #include <linux/of_reserved_mem.h>
-/*End modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
 
 #include <soc/qcom/secure_buffer.h>
 
@@ -122,6 +120,8 @@ static int msm_sharedmem_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct uio_info *info = NULL;
 	struct resource *clnt_res = NULL;
+	struct device_node *mem_node;
+	struct reserved_mem *rmem;
 	u32 client_id = ((u32)~0U);
 	u32 shared_mem_size = 0;
 	u32 shared_mem_tot_sz = 0;
@@ -166,7 +166,6 @@ static int msm_sharedmem_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	/*Bein modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
 	/*
 	 * Use the reserved memory if it is defined for this device else
 	 * allocate from normal CMA poll.
@@ -190,7 +189,6 @@ static int msm_sharedmem_probe(struct platform_device *pdev)
 		shared_mem_pyhsical = rmem->base;
 		pr_info("Allocated memory from shared DMA poll\n");
 	}
-	/*End modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
 
 	if (shared_mem_pyhsical == 0) {
 		is_addr_dynamic = true;
